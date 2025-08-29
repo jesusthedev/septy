@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MIPs Insights — Animated Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#0b0e14;
+      --panel:#11151f80;
+      --panel-solid:#121826;
+      --glass:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+      --text:#e7eef7;
+      --muted:#a6b1c2;
+      --accent:#6ee7ff;
+      --accent-2:#9b8cff;
+      --good:#85f7a3;
+      --warn:#ffd166;
+      --bad:#ff6b6b;
+      --grid:#1b2233;
+      --card-radius:18px;
+      --shadow:0 10px 30px rgba(0,0,0,.35);
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; font-family:Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      color:var(--text);
+      background: radial-gradient(1200px 800px at 10% -10%, #1e2742 0%, #0b0e14 45%),
+                  radial-gradient(800px 500px at 100% 10%, #252643 0%, #0b0e14 55%),
+                  var(--bg);
+      background-attachment: fixed;
+    }
+    .wrap{max-width:1200px; margin:0 auto; padding:24px}
+    header{display:flex; align-items:center; gap:18px; margin:8px 0 22px}
+    header .logo{width:54px;height:54px;border-radius:14px;background:conic-gradient(from 210deg, var(--accent), var(--accent-2), var(--good));box-shadow:var(--shadow)}
+    header h1{margin:0; font-weight:800; letter-spacing:.3px}
+    header p{margin:2px 0 0; color:var(--muted)}
+    .grid{display:grid; grid-template-columns:repeat(12,1fr); gap:18px}
+    .card{
+      grid-column:span 12;
+      background:var(--glass); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+      border:1px solid #232941; box-shadow:var(--shadow); border-radius:var(--card-radius);
+      padding:18px 18px 12px; position:relative; overflow:hidden;
+    }
+    .card .title{display:flex; align-items:center; gap:10px; color:var(--muted); font-weight:600; font-size:12px; letter-spacing:.1em; text-transform:uppercase}
+    .card h3{margin:4px 0 0}
+    .kpis{grid-column:span 12; display:grid; grid-template-columns:repeat(12,1fr); gap:18px}
+    .kpi{grid-column:span 6; padding:18px}
+    .kpi h2{font-size:38px; margin:10px 0 6px}
+    .kpi small{color:var(--muted)}
+    .kpi .trend{font-size:12px;color:var(--muted)}
+    .charts{grid-column:span 12; display:grid; grid-template-columns:repeat(12,1fr); gap:18px}
+    .chart{grid-column:span 12; min-height:380px; padding:8px 10px 16px}
+    .chart svg{width:100%; height:100%}
+    @media (min-width: 1024px){
+      .kpi{grid-column:span 3}
+      .chart.half{grid-column:span 6}
+      .chart.tall{grid-column:span 12; min-height:540px}
+    }
+    .waffle{display:grid; grid-template-columns:repeat(10, 18px); gap:6px; padding:6px 2px}
+    .waffle div{width:18px; height:18px; border-radius:6px; background:#26324a; border:1px solid #304066}
+    .waffle div.fill{background:linear-gradient(180deg, #88e7ff, #4ab8ff)}
+    .legend{display:flex; flex-wrap:wrap; gap:10px; margin-top:8px}
+    .legend .item{display:flex; align-items:center; gap:8px; font-size:12px; color:var(--muted)}
+    .legend .sw{width:12px; height:12px; border-radius:3px}
+    .controls{display:flex; align-items:center; gap:10px; margin:4px 0 0}
+    .btn{padding:8px 12px; border:1px solid #2a3352; background:#0f1320; color:#cfe1ff; border-radius:12px; font-weight:600; font-size:12px; cursor:pointer}
+    .btn:hover{filter:brightness(1.1)}
+    .tooltip{position:fixed; pointer-events:none; background:#0d1220; border:1px solid #263353; border-radius:10px; padding:8px 10px; color:#cfe1ff; font-size:12px; box-shadow:var(--shadow); opacity:0; transform:translate(-50%,-110%)}
+    .grid-overlay{position:absolute; inset:0; background:radial-gradient(1px 1px at 0 0, var(--grid) 2px, transparent 2px); background-size: 20px 20px; opacity:.2; pointer-events:none}
+    footer{color:var(--muted); text-align:center; padding:24px 0 8px; font-size:12px}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="logo" aria-hidden="true"></div>
+      <div>
+        <h1>MIPs Insights</h1>
+        <p>Executive‑grade visuals with a playful core. Update the numbers below and everything animates on page load.</p>
+      </div>
+    </header>
+
+    <section class="grid kpis">
+      <article class="card kpi" id="kpi-forms" aria-live="polite">
+        <div class="title">Total MIPs Forms</div>
+        <h2><span class="count" data-key="totals.forms">0</span></h2>
+        <small>Sum of forms across all orgs</small>
+      </article>
+
+      <article class="card kpi" id="kpi-lines" aria-live="polite">
+        <div class="title">Total Line Items</div>
+        <h2><span class="count" data-key="totals.lineItems">0</span></h2>
+        <small>Category chart uses these</small>
+      </article>
+
+      <article class="card kpi" id="kpi-ratio">
+        <div class="title">Avg Line Items per Form</div>
+        <h2><span class="count" data-key="derived.ratio">0</span></h2>
+        <small>Rounded to two decimals</small>
+      </article>
+
+      <article class="card kpi" id="kpi-top-org">
+        <div class="title">Top Org by Forms</div>
+        <h2><span id="top-org">—</span></h2>
+        <small id="top-org-detail"></small>
+      </article>
+    </section>
+
+    <section class="grid charts">
+      <article class="card chart half" id="donut">
+        <div class="title">Line Items Breakdown by Type</div>
+        <div class="controls">
+          <button class="btn" id="explode">Explode Segments</button>
+          <button class="btn" id="implode">Reset</button>
+        </div>
+        <svg viewBox="0 0 520 420" preserveAspectRatio="xMidYMid meet" aria-label="Line items breakdown donut chart"></svg>
+        <div class="legend" id="legend"></div>
+        <div class="grid-overlay"></div>
+      </article>
+
+      <article class="card chart half" id="bars">
+        <div class="title">Forms per Org</div>
+        <div class="controls">
+          <button class="btn" id="sort-desc">Sort by Count</button>
+          <button class="btn" id="sort-asc">Sort A→Z</button>
+        </div>
+        <svg viewBox="0 0 520 420" preserveAspectRatio="xMidYMid meet" aria-label="Forms per org bar chart"></svg>
+        <div class="grid-overlay"></div>
+      </article>
+
+      <article class="card chart tall" id="waffle-card">
+        <div class="title">Forms Coverage Waffle — each square is ~1% of 106 total</div>
+        <div id="waffle" class="waffle" aria-label="Waffle chart representing total forms"></div>
+      </article>
+    </section>
+  </div>
+
+  <div class="tooltip" id="tooltip"></div>
+  <footer>MIT Licensed · Built with D3 and good taste.</footer>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js" integrity="sha512-GXg9b3J8Q9Bt8P4y2W3zbLyvR9KZtjp9r6DH8H2W5mPjYis/Daz+oS3v7n1Y9Z2b9aPDW3bH6oI0V2o8qVqYcA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script>
+  const DATA = {
+    totals: { forms: 106, lineItems: 382 },
+    categories: [
+      { name: 'New Team Requests', value: 97 },
+      { name: 'OPs Leader Change Requests', value: 2 },
+      { name: 'DL Promotions', value: 13 },
+      { name: 'DL Alignment Requests', value: 158 },
+      { name: 'Rejected MIPs forms', value: 13 },
+      { name: 'Team Dissolve Requests', value: 59 },
+      { name: 'Site Change Requests', value: 31 },
+      { name: 'Late MIPs Requests', value: 9 }
+    ],
+    perOrg: [
+      { org: '312', value: 16 },
+      { org: '103', value: 14 },
+      { org: '502', value: 11 },
+      { org: '030', value: 11 },
+      { org: '503', value: 10 },
+      { org: '313', value: 7 },
+      { org: '688', value: 4 },
+      { org: '504', value: 4 },
+      { org: '218', value: 3 },
+      { org: '821', value: 3 },
+      { org: '210', value: 2 },
+      { org: '323', value: 2 },
+      { org: '305', value: 2 },
+      { org: '138', value: 2 },
+      { org: '310', value: 2 },
+      { org: '641', value: 2 },
+      { org: '317', value: 2 },
+      { org: '102', value: 1 },
+      { org: '311', value: 1 },
+      { org: '314', value: 1 },
+      { org: '315', value: 1 },
+      { org: '335', value: 1 },
+      { org: '322', value: 1 },
+      { org: '645', value: 1 },
+      { org: '646', value: 1 },
+      { org: '823', value: 1 }
+    ]
+  };
+
+  const DERIVED = {
+    ratio: +(DATA.totals.lineItems / DATA.totals.forms).toFixed(2)
+  };
+  const MODEL = { totals: DATA.totals, categories: DATA.categories, perOrg: DATA.perOrg, derived: DERIVED };
+
+  const fmt = new Intl.NumberFormat('en-US');
+  const percent = (v, total) => (100 * v / total);
+
+  function animateCount(el, value){
+    const duration = 1400; const start = performance.now();
+    const isFloat = String(value).includes('.');
+    function tick(ts){
+      const p = Math.min(1, (ts - start) / duration);
+      const eased = 1 - Math.pow(1-p, 3);
+      const cur = isFloat ? (value * eased).toFixed(2) : Math.round(value * eased);
+      el.textContent = isFloat ? cur : fmt.format(cur);
+      if(p < 1) requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  }
+
+  function confetti(x, y){
+    const n = 60; const colors = ['#88e7ff','#9b8cff','#85f7a3','#ffd166','#ff6b6b'];
+    const container = document.body;
+    for(let i=0;i<n;i++){
+      const d = document.createElement('div');
+      d.style.position='fixed'; d.style.left=x+'px'; d.style.top=y+'px';
+      d.style.width='6px'; d.style.height='10px'; d.style.borderRadius='2px';
+      d.style.background=colors[i%colors.length]; d.style.opacity=0.9; d.style.zIndex=9999;
+      container.appendChild(d);
+      const ang = Math.random()*Math.PI*2; const speed = 2 + Math.random()*6; const g = 0.25;
+      let vx = Math.cos(ang)*speed, vy = Math.sin(ang)*speed;
+      const rot = Math.random()*360; const start = performance.now();
+      (function anim(t){
+        const dt = (t-start)/16; vy += g; x += vx; y += vy; d.style.transform = `translate(${x}px, ${y}px) rotate(${rot + dt*8}deg)`;
+        d.style.opacity -= 0.01; if(d.style.opacity > 0) requestAnimationFrame(anim); else d.remove();
+      })(start);
+    }
+  }
+
+  document.querySelectorAll('.count').forEach(span => {
+    const path = span.dataset.key.split('.');
+    let v = MODEL; for(const k of path) v = v[k];
+    animateCount(span, v);
+  });
+  const top = [...MODEL.perOrg].sort((a,b)=>b.value-a.value)[0];
+  document.getElementById('top-org').textContent = `Org ${top.org}`;
+  document.getElementById('top-org-detail').textContent = `${fmt.format(top.value)} forms`;
+  document.querySelectorAll('.kpi').forEach(k => k.addEventListener('click', e=> confetti(e.clientX, e.clientY)));
+
+  // DONUT
+  (function(){
+    const svg = d3.select('#donut svg');
+    const w = 520, h = 420, r = Math.min(w,h)*0.38, cx = w/2, cy = h/2 + 10;
+    const g = svg.append('g').attr('transform', `translate(${cx},${cy})`);
+    const total = d3.sum(MODEL.categories, d=>d.value);
+    const color = d3.scaleOrdinal()
+      .domain(MODEL.categories.map(d=>d.name))
+      .range(['#88e7ff','#9b8cff','#85f7a3','#ffd166','#ff6b6b','#7ad6b8','#a2b4ff','#f1a6ff']);
+    const arc = d3.arc().innerRadius(r*0.64).outerRadius(r);
+    const arcExploded = d3.arc().innerRadius(r*0.64).outerRadius(r).padAngle(0.01).cornerRadius(8);
+    const pie = d3.pie().value(d=>d.value).sort(null);
+    const tooltip = d3.select('#tooltip');
+
+    const paths = g.selectAll('path').data(pie(MODEL.categories)).enter().append('path')
+      .attr('fill', d=> color(d.data.name))
+      .attr('d', d=> arc({startAngle:0, endAngle:0}))
+      .on('mousemove', (event,d)=>{
+        const pct = percent(d.data.value, total).toFixed(1);
+        tooltip.style('opacity',1).style('left', event.clientX+'px').style('top', event.clientY+'px')
+               .html(`<strong>${d.data.name}</strong><br>${fmt.format(d.data.value)} items • ${pct}%`);
+      })
+      .on('mouseleave', ()=> tooltip.style('opacity',0));
+
+    paths.transition().duration(1200).attrTween('d', d=>{
+      const i = d3.interpolate({'startAngle':0,'endAngle':0}, d);
+      return t => arcExploded(i(t));
+    });
+
+    const legend = d3.select('#legend');
+    MODEL.categories.forEach(cat =>{
+      const item = legend.append('div').attr('class','item');
+      item.append('span').attr('class','sw').style('background', color(cat.name));
+      const pct = percent(cat.value, total).toFixed(1);
+      item.append('span').text(`${cat.name} • ${fmt.format(cat.value)} • ${pct}%`);
+    });
+
+    const baseAngles = pie(MODEL.categories).map(d=> ({...d}));
+    function setExploded(on){
+      const k = on ? 1 : 0;
+      g.selectAll('path').transition().duration(600).attr('transform', (d,i)=>{
+        const c = arcExploded.centroid(baseAngles[i]);
+        return `translate(${c[0]*0.08*k}, ${c[1]*0.08*k})`;
+      });
+    }
+    document.getElementById('explode').onclick = ()=> setExploded(true);
+    document.getElementById('implode').onclick = ()=> setExploded(false);
+  })();
+
+  // BARS
+  (function(){
+    const svg = d3.select('#bars svg');
+    const w = 520, h = 420, m = {t:24, r:24, b:40, l:60};
+    const g = svg.append('g').attr('transform', `translate(${m.l},${m.t})`);
+    const innerW = w - m.l - m.r, innerH = h - m.t - m.b;
+
+    let data = [...MODEL.perOrg];
+
+    const x = d3.scaleLinear().range([0, innerW]);
+    const y = d3.scaleBand().range([0, innerH]).padding(0.16);
+
+    function render(){
+      x.domain([0, d3.max(data, d=>d.value)]);
+      y.domain(data.map(d=> d.org));
+
+      g.selectAll('.x-axis').data([null]).join('g').attr('class','x-axis')
+        .attr('transform', `translate(0,${innerH})`).call(d3.axisBottom(x).ticks(6).tickSizeOuter(0));
+      g.selectAll('.y-axis').data([null]).join('g').attr('class','y-axis')
+        .call(d3.axisLeft(y).tickSizeOuter(0));
+
+      g.selectAll('.bar').data(data, d=> d.org).join(
+        enter => enter.append('g').attr('class','bar').call(enter => {
+          enter.append('rect')
+            .attr('x',0).attr('y', d=> y(d.org))
+            .attr('height', y.bandwidth())
+            .attr('width', 0)
+            .attr('rx', 8)
+            .attr('fill', '#88e7ff')
+            .transition().duration(900)
+            .attr('width', d=> x(d.value));
+          enter.append('text')
+            .attr('x', 6).attr('y', d=> y(d.org) + y.bandwidth()/2 + 4)
+            .attr('fill', '#0b0e14').attr('font-size', 12).attr('font-weight', 700)
+            .text(d=> d.value)
+            .attr('opacity', 0)
+            .transition().delay(400).duration(600).attr('opacity', 0.9)
+            .attr('x', d=> Math.max(6, x(d.value) - 24));
+        }),
+        update => update.call(update => {
+          update.select('rect').transition().duration(800)
+            .attr('y', d=> y(d.org)).attr('height', y.bandwidth()).attr('width', d=> x(d.value));
+          update.select('text').transition().duration(800)
+            .attr('y', d=> y(d.org) + y.bandwidth()/2 + 4)
+            .attr('x', d=> Math.max(6, x(d.value) - 24)).text(d=> d.value);
+        })
+      );
+    }
+
+    render();
+    document.getElementById('sort-desc').onclick = ()=>{ data.sort((a,b)=> b.value - a.value); render(); };
+    document.getElementById('sort-asc').onclick = ()=>{ data.sort((a,b)=> a.org.localeCompare(b.org)); render(); };
+  })();
+
+  // WAFFLE
+  (function(){
+    const target = document.getElementById('waffle');
+    target.innerHTML = '';
+    const totalCells = 110;
+    const filled = DATA.totals.forms;
+    for(let i=0;i<totalCells;i++){
+      const d = document.createElement('div');
+      if(i < filled) setTimeout(()=> d.classList.add('fill'), 4*i + (i%10)*10);
+      target.appendChild(d);
+    }
+  })();
+  </script>
+</body>
+</html>

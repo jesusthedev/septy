@@ -1,0 +1,4 @@
+# Not strictly needed here, but tidy by default
+node_modules/
+.DS_Store
+*.log
