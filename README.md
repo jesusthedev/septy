@@ -1,6 +1,6 @@
 # MIPs Animated Dashboard
 
-A sleek, animated, and interactive dashboard built with D3.js to visualize MIPs forms and line items data straight from your screenshot.
+A sleek, animated, and interactive dashboard built with D3.js to visualize MIPs forms and line items.
 
 ## Features
 - KPI counters with animation
